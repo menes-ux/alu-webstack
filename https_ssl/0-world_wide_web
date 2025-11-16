@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# This script audits the DNS records for specific subdomains of a given domain.
+
+# --- Function Definition ---
+# This function queries DNS for a specific subdomain and prints its info.
+# $1: The full subdomain to query (e.g., www.yourdomain.com)
+# $2: The short subdomain name to display (e.g., www)
+get_record_info() {
+    local full_domain="$1"
+    local sub_domain_name="$2"
+
+    # 1. Use 'dig' to get DNS info.
+    # 2. 'grep -A1' gets the "ANSWER SECTION" plus the line right after it.
+    # 3. 'grep -v ';;'' removes the "ANSWER SECTION" line itself, leaving only the answer.
+    local dig_result
+    dig_result=$(dig "$full_domain" | grep -A1 'ANSWER SECTION:' | grep -v ';;')
+
+    # 4. Use 'awk' to parse the result and print it.
+    #    -v sub="$sub_domain_name": This passes your $sub_domain_name variable into awk.
+    #    $4: This is the 4th column of the dig output (the record type, e.g., "A").
+    #    $5: This is the 5th column (the destination IP address).
+    #
+    # We disable shellcheck SC2086 because the project requires it.
+    # This is because we are intentionally letting $dig_result split into words.
+    # shellcheck disable=SC2086
+    echo $dig_result | awk -v sub="$sub_domain_name" '{print "The subdomain " sub " is a " $4 " record and points to " $5}'
+}
+
+# --- Main Script Logic ---
+
+# Store the command-line arguments in clearly named variables
+DOMAIN="$1"
+SUBDOMAIN="$2"
+
+# Check if the second argument (SUBDOMAIN) is empty (using -z)
+if [ -z "$SUBDOMAIN" ]; then
+    # If SUBDOMAIN is empty, run the function for all four required subdomains
+    get_record_info "www.$DOMAIN" "www"
+    get_record_info "lb-01.$DOMAIN" "lb-01"
+    get_record_info "web-01.$DOMAIN" "web-01"
+    get_record_info "web-02.$DOMAIN" "web-02"
+else
+    # If SUBDOMAIN is provided, run the function only for that specific subdomain
+    get_record_info "$SUBDOMAIN.$DOMAIN" "$SUBDOMAIN"
+fi
