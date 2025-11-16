@@ -16,14 +16,15 @@ get_record_info() {
     dig_result=$(dig "$full_domain" | grep -A1 'ANSWER SECTION:' | grep -v ';;')
 
     # 4. Use 'awk' to parse the result and print it.
-    #    -v sub="$sub_domain_name": This passes your $sub_domain_name variable into awk.
+    #    -v subdomain="$sub_domain_name": This passes your $sub_domain_name variable into awk
+    #                                     (We use "subdomain" because "sub" is a reserved word).
     #    $4: This is the 4th column of the dig output (the record type, e.g., "A").
     #    $5: This is the 5th column (the destination IP address).
     #
     # We disable shellcheck SC2086 because the project requires it.
     # This is because we are intentionally letting $dig_result split into words.
     # shellcheck disable=SC2086
-    echo $dig_result | awk -v sub="$sub_domain_name" '{print "The subdomain " sub " is a " $4 " record and points to " $5}'
+    echo $dig_result | awk -v subdomain="$sub_domain_name" '{print "The subdomain " subdomain " is a " $4 " record and points to " $5}'
 }
 
 # --- Main Script Logic ---
